@@ -12,6 +12,8 @@ import '../screens/home/schedule_screen.dart';
 import '../screens/home/fees_screen.dart';
 import '../screens/home/notifications_screen.dart';
 import '../screens/child/child_detail_screen.dart';
+import '../screens/messages/chat_screen.dart';
+import '../theme/app_theme.dart';
 import '../widgets/main_shell.dart';
 
 class _RouterNotifier extends ChangeNotifier {
@@ -61,6 +63,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home/notifications',
         builder: (_, __) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/chat',
+        builder: (_, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return ChatScreen(
+            contactName: extra['name'] as String? ?? '',
+            contactInitials: extra['initials'] as String? ?? '',
+            contactColor: extra['color'] as Color? ?? AppTheme.primaryGreen,
+            isGroup: extra['isGroup'] as bool? ?? false,
+          );
+        },
       ),
       GoRoute(
         path: '/home/child/:id',

@@ -10,8 +10,9 @@ class MainShell extends StatelessWidget {
   int _currentIndex(BuildContext context) {
     final path = GoRouterState.of(context).uri.path;
     if (path.startsWith('/home/children')) return 1;
-    if (path.startsWith('/home/messages')) return 2;
-    if (path.startsWith('/home/profile')) return 3;
+    if (path.startsWith('/home/schedule')) return 2;
+    if (path.startsWith('/home/messages')) return 3;
+    if (path.startsWith('/home/profile')) return 4;
     return 0;
   }
 
@@ -29,8 +30,10 @@ class MainShell extends StatelessWidget {
             case 1:
               context.go('/home/children');
             case 2:
-              context.go('/home/messages');
+              context.go('/home/schedule');
             case 3:
+              context.go('/home/messages');
+            case 4:
               context.go('/home/profile');
           }
         },
@@ -46,6 +49,12 @@ class MainShell extends StatelessWidget {
             selectedIcon: Icon(Icons.child_care_rounded,
                 color: AppTheme.primaryGreen),
             label: 'Children',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_today_outlined),
+            selectedIcon: Icon(Icons.calendar_today_rounded,
+                color: AppTheme.primaryGreen),
+            label: 'Schedule',
           ),
           NavigationDestination(
             icon: Icon(Icons.message_outlined),

@@ -46,7 +46,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 4, vsync: this);
+    _tabCtrl = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -72,6 +72,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen>
             Tab(text: 'Marks'),
             Tab(text: 'Report Card'),
             Tab(text: 'Fees'),
+            Tab(text: 'Quran'),
           ],
         ),
       ),
@@ -86,6 +87,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen>
                 _MarksTab(averageMark: child.averageMark),
                 _ReportCardTab(child: child),
                 _FeesTab(childName: child.name.split(' ').first),
+                _QuranTab(child: child),
               ],
             ),
           ),
@@ -1510,6 +1512,197 @@ class _FeeInvoice {
     required this.status,
     required this.dueDate,
   });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Quran Tab
+// ────────────────────────────────────────────────────────────────────────────
+
+class _QuranTab extends StatelessWidget {
+  final ChildData child;
+  const _QuranTab({required this.child});
+
+  static const _surahData = <String, List<Map<String, dynamic>>>{
+    '1': [
+      {'name': 'Al-Fatiha (1)', 'progress': 1.0, 'completed': true},
+      {'name': 'An-Nas (114)', 'progress': 1.0, 'completed': true},
+      {'name': 'Al-Falaq (113)', 'progress': 1.0, 'completed': true},
+      {'name': 'Al-Ikhlas (112)', 'progress': 0.85, 'completed': false},
+      {'name': 'Al-Masad (111)', 'progress': 0.50, 'completed': false},
+      {'name': 'An-Nasr (110)', 'progress': 0.20, 'completed': false},
+    ],
+    '2': [
+      {'name': 'Al-Fatiha (1)', 'progress': 1.0, 'completed': true},
+      {'name': 'An-Nas (114)', 'progress': 0.70, 'completed': false},
+    ],
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final surahs = _surahData[child.id] ?? [];
+    final done = surahs.where((s) => s['completed'] == true).length;
+    final inProgress = surahs.length - done;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Summary banner
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [AppTheme.primaryGreen, Color(0xFF14532D)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _QStat(label: 'Current', value: child.surahProgress),
+              _QDiv(),
+              _QStat(label: 'Completed', value: '$done'),
+              _QDiv(),
+              _QStat(label: 'In Progress', value: '$inProgress'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Surah Progress',
+          style: TextStyle(
+              fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.textDark),
+        ),
+        const SizedBox(height: 12),
+        if (surahs.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 32),
+              child: Text(
+                'No progress data yet.',
+                style: TextStyle(color: AppTheme.textSecondary.withValues(alpha: 0.7)),
+              ),
+            ),
+          )
+        else
+          ...surahs.map((s) => _SurahRow(
+                name: s['name'] as String,
+                progress: (s['progress'] as num).toDouble(),
+                completed: s['completed'] as bool,
+              )),
+        const SizedBox(height: 80),
+      ],
+    );
+  }
+}
+
+class _QStat extends StatelessWidget {
+  final String label;
+  final String value;
+  const _QStat({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(value,
+            style: const TextStyle(
+                color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 2),
+        Text(label,
+            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+      ],
+    );
+  }
+}
+
+class _QDiv extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.3));
+}
+
+class _SurahRow extends StatelessWidget {
+  final String name;
+  final double progress;
+  final bool completed;
+  const _SurahRow(
+      {required this.name, required this.progress, required this.completed});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = completed ? AppTheme.successGreen : AppTheme.primaryGreen;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceWhite,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              completed ? Icons.check_circle_rounded : Icons.menu_book_rounded,
+              color: color,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textDark)),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: color.withValues(alpha: 0.12),
+                    valueColor: AlwaysStoppedAnimation(color),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '${(progress * 100).round()}%',
+            style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w700, color: color),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────────────

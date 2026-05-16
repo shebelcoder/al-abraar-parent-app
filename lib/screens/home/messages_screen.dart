@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../theme/app_theme.dart';
 
 const _conversations = [
@@ -254,7 +255,12 @@ class _ConversationTile extends StatelessWidget {
               ),
           ],
         ),
-        onTap: () {},
+        onTap: () => context.push('/chat', extra: {
+          'name': conv.name,
+          'initials': conv.initials,
+          'color': conv.color,
+          'isGroup': conv.isGroup,
+        }),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notifications_provider.dart';
 import '../../theme/app_theme.dart';
 import '../child/child_detail_screen.dart';
 
@@ -73,26 +74,37 @@ class DashboardScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: Stack(
-                      children: [
-                        const Icon(Icons.notifications_outlined,
+                  Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined,
                             color: AppTheme.textDark),
+                        onPressed: () => context.push('/home/notifications'),
+                      ),
+                      if (ref.watch(unreadCountProvider) > 0)
                         Positioned(
-                          right: 0,
-                          top: 0,
+                          right: 8,
+                          top: 8,
                           child: Container(
-                            width: 8,
-                            height: 8,
+                            width: 16,
+                            height: 16,
                             decoration: const BoxDecoration(
                               color: AppTheme.errorRed,
                               shape: BoxShape.circle,
                             ),
+                            child: Center(
+                              child: Text(
+                                '${ref.watch(unreadCountProvider)}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                    onPressed: () => context.push('/home/notifications'),
+                    ],
                   ),
                   Container(
                     width: 40,
