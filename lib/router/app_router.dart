@@ -8,6 +8,8 @@ import '../screens/home/dashboard_screen.dart';
 import '../screens/home/children_screen.dart';
 import '../screens/home/messages_screen.dart';
 import '../screens/home/profile_screen.dart';
+import '../screens/home/schedule_screen.dart';
+import '../screens/home/fees_screen.dart';
 import '../screens/home/notifications_screen.dart';
 import '../screens/child/child_detail_screen.dart';
 import '../widgets/main_shell.dart';
@@ -55,12 +57,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/login',
         builder: (_, __) => const LoginScreen(),
       ),
-      // Notifications pushed on top of shell
+      // Pushed on top of shell (no bottom nav)
       GoRoute(
         path: '/home/notifications',
         builder: (_, __) => const NotificationsScreen(),
       ),
-      // Child detail pushed on top of shell
       GoRoute(
         path: '/home/child/:id',
         builder: (_, state) {
@@ -79,6 +80,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/home/children',
             builder: (_, __) => const ChildrenScreen(),
+          ),
+          GoRoute(
+            path: '/home/schedule',
+            builder: (_, __) => const ScheduleScreen(),
+          ),
+          GoRoute(
+            path: '/home/fees',
+            builder: (_, __) => const FeesScreen(),
           ),
           GoRoute(
             path: '/home/messages',

@@ -329,19 +329,19 @@ class _QuickActionsGrid extends StatelessWidget {
           color: AppTheme.primaryGreen,
           onTap: () => context.go('/home/children')),
       _ActionItem(
-          icon: Icons.how_to_reg_rounded,
-          label: 'Attendance',
+          icon: Icons.calendar_today_rounded,
+          label: 'Schedule',
           color: const Color(0xFF0EA5E9),
-          onTap: () => context.go('/home/children')),
+          onTap: () => context.go('/home/schedule')),
+      _ActionItem(
+          icon: Icons.receipt_long_rounded,
+          label: 'Fees',
+          color: AppTheme.warningOrange,
+          onTap: () => context.go('/home/fees')),
       _ActionItem(
           icon: Icons.grade_rounded,
           label: 'Marks',
           color: const Color(0xFF8B5CF6),
-          onTap: () => context.go('/home/children')),
-      _ActionItem(
-          icon: Icons.article_rounded,
-          label: 'Report Card',
-          color: AppTheme.warningOrange,
           onTap: () => context.go('/home/children')),
       _ActionItem(
           icon: Icons.message_rounded,

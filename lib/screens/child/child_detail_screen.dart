@@ -44,7 +44,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 3, vsync: this);
+    _tabCtrl = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -69,6 +69,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen>
             Tab(text: 'Attendance'),
             Tab(text: 'Marks'),
             Tab(text: 'Report Card'),
+            Tab(text: 'Fees'),
           ],
         ),
       ),
@@ -82,6 +83,7 @@ class _ChildDetailScreenState extends State<ChildDetailScreen>
                 _AttendanceTab(rate: child.attendanceRate),
                 _MarksTab(averageMark: child.averageMark),
                 _ReportCardTab(child: child),
+                _FeesTab(childName: child.name.split(' ').first),
               ],
             ),
           ),
@@ -1217,6 +1219,257 @@ class _TermData {
     required this.teacher,
   });
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Fees Tab
+// ────────────────────────────────────────────────────────────────────────────
+
+class _FeesTab extends StatelessWidget {
+  final String childName;
+  const _FeesTab({required this.childName});
+
+  static const _invoices = [
+    _FeeInvoice('Term 3 Tuition', 300, 'Paid', 'May 1, 2026'),
+    _FeeInvoice('Term 3 Materials', 50, 'Paid', 'May 1, 2026'),
+    _FeeInvoice('Term 3 Activity Fee', 100, 'Unpaid', 'Jun 1, 2026'),
+  ];
+
+  int get _totalDue => _invoices.fold(0, (s, i) => s + i.amount);
+  int get _totalPaid => _invoices
+      .where((i) => i.status == 'Paid')
+      .fold(0, (s, i) => s + i.amount);
+  int get _outstanding => _totalDue - _totalPaid;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Summary card
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: _outstanding > 0
+                  ? [AppTheme.warningOrange, const Color(0xFFEA580C)]
+                  : [AppTheme.successGreen, const Color(0xFF059669)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: (_outstanding > 0
+                        ? AppTheme.warningOrange
+                        : AppTheme.successGreen)
+                    .withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _outstanding > 0 ? 'Amount Due' : 'All Paid',
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _outstanding > 0 ? 'AED $_outstanding' : 'AED 0',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _FeeStat(label: 'Total Billed', value: 'AED $_totalDue'),
+                  ),
+                  Container(
+                      width: 1,
+                      height: 32,
+                      color: Colors.white.withValues(alpha: 0.3)),
+                  Expanded(
+                    child: _FeeStat(label: 'Paid', value: 'AED $_totalPaid'),
+                  ),
+                ],
+              ),
+              if (_outstanding > 0) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Payment gateway coming soon.'),
+                        backgroundColor: AppTheme.primaryGreen,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.warningOrange,
+                      minimumSize: const Size(0, 46),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      textStyle: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+                    child: Text('Pay AED $_outstanding'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'Invoices',
+          style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textDark),
+        ),
+        const SizedBox(height: 12),
+        ..._invoices.map((inv) => _FeeInvoiceCard(invoice: inv)),
+        const SizedBox(height: 80),
+      ],
+    );
+  }
+}
+
+class _FeeStat extends StatelessWidget {
+  final String label;
+  final String value;
+  const _FeeStat({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(value,
+            style: const TextStyle(
+                color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 2),
+        Text(label,
+            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+      ],
+    );
+  }
+}
+
+class _FeeInvoiceCard extends StatelessWidget {
+  final _FeeInvoice invoice;
+  const _FeeInvoiceCard({required this.invoice});
+
+  @override
+  Widget build(BuildContext context) {
+    final isPaid = invoice.status == 'Paid';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceWhite,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: (isPaid ? AppTheme.successGreen : AppTheme.warningOrange)
+                  .withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isPaid ? Icons.check_circle_rounded : Icons.pending_rounded,
+              color: isPaid ? AppTheme.successGreen : AppTheme.warningOrange,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(invoice.label,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textDark)),
+                const SizedBox(height: 2),
+                Text(
+                  isPaid
+                      ? 'Paid on ${invoice.dueDate}'
+                      : 'Due ${invoice.dueDate}',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('AED ${invoice.amount}',
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textDark)),
+              const SizedBox(height: 4),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (isPaid
+                          ? AppTheme.successGreen
+                          : AppTheme.warningOrange)
+                      .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  invoice.status,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isPaid
+                        ? AppTheme.successGreen
+                        : AppTheme.warningOrange,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeeInvoice {
+  final String label;
+  final int amount;
+  final String status;
+  final String dueDate;
+  const _FeeInvoice(this.label, this.amount, this.status, this.dueDate);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 
 class _SubjectResult {
   final String name;
