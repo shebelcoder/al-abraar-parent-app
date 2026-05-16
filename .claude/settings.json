@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /Users/shebelfaraharab/Documents/al-abraar/)",
+      "Read(//Users/shebelfaraharab/Documents/al-abraar/**)",
+      "Bash(ls /Users/shebelfaraharab/Documents/al-abraar/apps/)",
+      "Read(//Users/shebelfaraharab/Documents/al-abraar/apps/**)",
+      "Bash(flutter pub *)",
+      "Bash(xcrun simctl *)",
+      "Bash(flutter run *)",
+      "Bash(flutter analyze *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}
