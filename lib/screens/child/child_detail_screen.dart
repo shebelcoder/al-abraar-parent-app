@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import '../../services/stripe_service.dart';
 import '../../theme/app_theme.dart';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1224,21 +1226,66 @@ class _TermData {
 // Fees Tab
 // ────────────────────────────────────────────────────────────────────────────
 
-class _FeesTab extends StatelessWidget {
+class _FeesTab extends StatefulWidget {
   final String childName;
   const _FeesTab({required this.childName});
 
-  static const _invoices = [
-    _FeeInvoice('Term 3 Tuition', 300, 'Paid', 'May 1, 2026'),
-    _FeeInvoice('Term 3 Materials', 50, 'Paid', 'May 1, 2026'),
-    _FeeInvoice('Term 3 Activity Fee', 100, 'Unpaid', 'Jun 1, 2026'),
-  ];
+  @override
+  State<_FeesTab> createState() => _FeesTabState();
+}
+
+class _FeesTabState extends State<_FeesTab> {
+  late final List<_FeeInvoice> _invoices;
+
+  @override
+  void initState() {
+    super.initState();
+    _invoices = [
+      _FeeInvoice(id: 'inv_001', label: 'Term 3 Tuition', amount: 300, status: 'Paid', dueDate: 'May 1, 2026'),
+      _FeeInvoice(id: 'inv_002', label: 'Term 3 Materials', amount: 50, status: 'Paid', dueDate: 'May 1, 2026'),
+      _FeeInvoice(id: 'inv_003', label: 'Term 3 Activity Fee', amount: 100, status: 'Unpaid', dueDate: 'Jun 1, 2026'),
+    ];
+  }
 
   int get _totalDue => _invoices.fold(0, (s, i) => s + i.amount);
-  int get _totalPaid => _invoices
-      .where((i) => i.status == 'Paid')
-      .fold(0, (s, i) => s + i.amount);
+  int get _totalPaid => _invoices.where((i) => i.status == 'Paid').fold(0, (s, i) => s + i.amount);
   int get _outstanding => _totalDue - _totalPaid;
+
+  Future<void> _payInvoice(_FeeInvoice invoice) async {
+    setState(() => invoice.loading = true);
+    try {
+      await StripeService.payFee(
+        invoiceId: invoice.id,
+        amountAed: invoice.amount,
+        description: invoice.label,
+      );
+      setState(() => invoice.status = 'Paid');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${invoice.label} paid successfully.'),
+          backgroundColor: AppTheme.successGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } on StripeException catch (e) {
+      if (e.error.code == FailureCode.Canceled) return;
+      if (mounted) _showError(e.error.localizedMessage ?? 'Payment failed.');
+    } catch (_) {
+      if (mounted) _showError('Could not reach the server. Please try again.');
+    } finally {
+      if (mounted) setState(() => invoice.loading = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: AppTheme.errorRed,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1259,9 +1306,7 @@ class _FeesTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: (_outstanding > 0
-                        ? AppTheme.warningOrange
-                        : AppTheme.successGreen)
+                color: (_outstanding > 0 ? AppTheme.warningOrange : AppTheme.successGreen)
                     .withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
@@ -1271,59 +1316,39 @@ class _FeesTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                _outstanding > 0 ? 'Amount Due' : 'All Paid',
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
-              ),
+              Text(_outstanding > 0 ? 'Amount Due' : 'All Paid',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13)),
               const SizedBox(height: 6),
               Text(
                 _outstanding > 0 ? 'AED $_outstanding' : 'AED 0',
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.w900,
-                  height: 1,
-                ),
+                    color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900, height: 1),
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(
-                    child: _FeeStat(label: 'Total Billed', value: 'AED $_totalDue'),
-                  ),
-                  Container(
-                      width: 1,
-                      height: 32,
-                      color: Colors.white.withValues(alpha: 0.3)),
-                  Expanded(
-                    child: _FeeStat(label: 'Paid', value: 'AED $_totalPaid'),
-                  ),
+                  Expanded(child: _FeeStat(label: 'Total Billed', value: 'AED $_totalDue')),
+                  Container(width: 1, height: 32, color: Colors.white.withValues(alpha: 0.3)),
+                  Expanded(child: _FeeStat(label: 'Paid', value: 'AED $_totalPaid')),
                 ],
               ),
               if (_outstanding > 0) ...[
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Payment gateway coming soon.'),
-                        backgroundColor: AppTheme.primaryGreen,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
+                  child: ElevatedButton.icon(
+                    onPressed: () => _payInvoice(
+                        _invoices.firstWhere((i) => i.status == 'Unpaid')),
+                    icon: const Icon(Icons.payment_rounded, size: 18),
+                    label: Text('Pay AED $_outstanding with Stripe'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppTheme.warningOrange,
                       minimumSize: const Size(0, 46),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      textStyle: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 15),
+                      textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                     ),
-                    child: Text('Pay AED $_outstanding'),
                   ),
                 ),
               ],
@@ -1331,15 +1356,14 @@ class _FeesTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
-          'Invoices',
-          style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textDark),
-        ),
+        const Text('Invoices',
+            style: TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.textDark)),
         const SizedBox(height: 12),
-        ..._invoices.map((inv) => _FeeInvoiceCard(invoice: inv)),
+        ..._invoices.map((inv) => _FeeInvoiceCard(
+              invoice: inv,
+              onPay: () => _payInvoice(inv),
+            )),
         const SizedBox(height: 80),
       ],
     );
@@ -1359,8 +1383,7 @@ class _FeeStat extends StatelessWidget {
             style: const TextStyle(
                 color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
         const SizedBox(height: 2),
-        Text(label,
-            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
       ],
     );
   }
@@ -1368,7 +1391,8 @@ class _FeeStat extends StatelessWidget {
 
 class _FeeInvoiceCard extends StatelessWidget {
   final _FeeInvoice invoice;
-  const _FeeInvoiceCard({required this.invoice});
+  final VoidCallback onPay;
+  const _FeeInvoiceCard({required this.invoice, required this.onPay});
 
   @override
   Widget build(BuildContext context) {
@@ -1409,50 +1433,60 @@ class _FeeInvoiceCard extends StatelessWidget {
               children: [
                 Text(invoice.label,
                     style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark)),
+                        fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textDark)),
                 const SizedBox(height: 2),
                 Text(
-                  isPaid
-                      ? 'Paid on ${invoice.dueDate}'
-                      : 'Due ${invoice.dueDate}',
-                  style: const TextStyle(
-                      fontSize: 12, color: AppTheme.textSecondary),
+                  isPaid ? 'Paid on ${invoice.dueDate}' : 'Due ${invoice.dueDate}',
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text('AED ${invoice.amount}',
                   style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.textDark)),
-              const SizedBox(height: 4),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: (isPaid
-                          ? AppTheme.successGreen
-                          : AppTheme.warningOrange)
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  invoice.status,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isPaid
-                        ? AppTheme.successGreen
-                        : AppTheme.warningOrange,
+                      fontSize: 15, fontWeight: FontWeight.w800, color: AppTheme.textDark)),
+              const SizedBox(height: 6),
+              if (isPaid)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.successGreen.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text('Paid',
+                      style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.successGreen)),
+                )
+              else if (invoice.loading)
+                const SizedBox(
+                  width: 20, height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryGreen),
+                )
+              else
+                GestureDetector(
+                  onTap: onPay,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryGreen,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.payment_rounded, size: 12, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text('Pay',
+                            style: TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                      ],
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ],
@@ -1462,11 +1496,20 @@ class _FeeInvoiceCard extends StatelessWidget {
 }
 
 class _FeeInvoice {
+  final String id;
   final String label;
   final int amount;
-  final String status;
+  String status;
   final String dueDate;
-  const _FeeInvoice(this.label, this.amount, this.status, this.dueDate);
+  bool loading = false;
+
+  _FeeInvoice({
+    required this.id,
+    required this.label,
+    required this.amount,
+    required this.status,
+    required this.dueDate,
+  });
 }
 
 // ────────────────────────────────────────────────────────────────────────────
